@@ -1,8 +1,12 @@
 package com.example.tinkoff.view;
 
+import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,7 +18,6 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
-import androidx.lifecycle.Observer;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
@@ -27,16 +30,21 @@ import com.example.tinkoff.repository.RepositoryImpl;
 import com.example.tinkoff.repository.model.Gif;
 
 
-public class GifViewerFragment extends Fragment implements Observer<Gif> {
+public class GifViewerFragment extends Fragment implements androidx.lifecycle.Observer<Gif>, RepositoryImpl.Observer, View.OnClickListener {
     public final static String TAG = "VIEWER";
 
     private final Repository repository;
 
-    private ImageView gifViewer;
+    private ImageView viewer;
     private TextView name;
     private Button previousButton;
     private Button nextButton;
     private ProgressBar progressBar;
+
+    private View errorIcon;
+    private View errorText;
+    private Button errorButton;
+
 
 //    // TODO: Rename parameter arguments, choose names that match
 //    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -72,7 +80,7 @@ public class GifViewerFragment extends Fragment implements Observer<Gif> {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        repository.updateGifs();
+        repository.connect(this);
 //        if (getArguments() != null) {
 //            mParam1 = getArguments().getString(ARG_PARAM1);
 //            mParam2 = getArguments().getString(ARG_PARAM2);
@@ -84,11 +92,17 @@ public class GifViewerFragment extends Fragment implements Observer<Gif> {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_gif_viewwer, container, false);
 
-        gifViewer = view.findViewById(R.id.gif_viewer);
+        viewer = view.findViewById(R.id.gif_viewer);
         name = view.findViewById(R.id.gif_name);
         previousButton = view.findViewById(R.id.previous_button);
         nextButton = view.findViewById(R.id.next_button);
         progressBar = view.findViewById(R.id.progress_bar);
+
+        errorIcon = view.findViewById(R.id.error_icon);
+        errorText = view.findViewById(R.id.error_text);
+        errorButton = view.findViewById(R.id.error_button);
+
+        errorButton.setOnClickListener(this);
 
         LiveData<Gif> liveData = repository.getGif();
         liveData.observe(this, this);
@@ -96,37 +110,100 @@ public class GifViewerFragment extends Fragment implements Observer<Gif> {
         nextButton.setOnClickListener(v -> repository.nextGif());
         previousButton.setOnClickListener(v -> repository.previousGif());
 
+        repository.updateGifs();
+
         return view;
     }
 
     @Override
     public void onChanged(Gif gif) {
         name.setText(gif.getName());
-        progressBar.setVisibility(View.VISIBLE);
+        loading();
         Glide.with(getContext())
                 .load(gif.getUrl())
                 .listener(new RequestListener<Drawable>() {
                     @Override
                     public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-                        progressBar.setVisibility(View.GONE);
+                        done();
+                        error();
                         return false;
                     }
 
                     @Override
                     public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-                        progressBar.setVisibility(View.GONE);
+                        done();
                         return false;
                     }
                 })
                 .fitCenter()
-                .into(gifViewer);
+                .into(viewer);
 
         if (repository.isFirst()) {
-            previousButton.setClickable(false);
-            previousButton.setBackgroundColor(Color.parseColor("#e4e4e4"));
+            deactivateButton(previousButton);
         } else {
-            previousButton.setClickable(true);
-            previousButton.setBackgroundColor(Color.parseColor("#ffffff"));
+            activateButton(previousButton);
         }
+    }
+
+    @Override
+    public void error() {
+        Log.e("Fragment", "Ошибка с загрзкой данных!");
+
+        deactivateButton(previousButton);
+        deactivateButton(nextButton);
+        viewer.setVisibility(View.GONE);
+        name.setVisibility(View.GONE);
+
+        errorIcon.setVisibility(View.VISIBLE);
+        errorText.setVisibility(View.VISIBLE);
+        errorButton.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void loading() {
+        viewer.setVisibility(View.INVISIBLE);
+        progressBar.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void done() {
+        progressBar.setVisibility(View.GONE);
+        viewer.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        repository.disconnect();
+    }
+
+    @Override
+    public void onClick(View view) {
+        ConnectivityManager cm = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        if (netInfo == null || !netInfo.isConnectedOrConnecting()) {
+            return;
+        }
+
+        activateButton(previousButton);
+        activateButton(nextButton);
+        viewer.setVisibility(View.VISIBLE);
+        name.setVisibility(View.VISIBLE);
+
+        errorIcon.setVisibility(View.GONE);
+        errorText.setVisibility(View.GONE);
+        errorButton.setVisibility(View.GONE);
+
+        repository.updateGif();
+    }
+
+    private void activateButton(Button button) {
+        button.setClickable(true);
+        button.setBackgroundColor(Color.parseColor("#ffffff"));
+    }
+
+    private void deactivateButton(Button button) {
+        button.setClickable(false);
+        button.setBackgroundColor(Color.parseColor("#e4e4e4"));
     }
 }

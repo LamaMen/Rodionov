@@ -10,10 +10,15 @@ public interface Repository {
 
     LiveData<Gif> getGif();
 
+    void updateGif();
+
     void nextGif();
 
     void previousGif();
 
     boolean isFirst();
 
+    void connect(RepositoryImpl.Observer observer);
+
+    void disconnect();
 }

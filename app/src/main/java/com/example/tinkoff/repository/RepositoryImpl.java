@@ -17,13 +17,13 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class RepositoryImpl implements Repository{
+public class RepositoryImpl implements Repository {
+    private static Repository instance;
     private final MutableLiveData<Gif> liveData = new MutableLiveData<>();
     private final List<Gif> gifList = new ArrayList<>();
+    private Observer observer;
     private int currentGif = -1;
     private int currentPage = 0;
-
-    private static Repository instance;
 
     private RepositoryImpl() {
     }
@@ -36,6 +36,8 @@ public class RepositoryImpl implements Repository{
     }
 
     public void updateGifs() {
+        observer.loading();
+
         App.getInstance().service.getGifs("latest", currentPage).enqueue(new Callback<GifList>() {
             @Override
             public void onResponse(@NotNull Call<GifList> call, @NotNull Response<GifList> response) {
@@ -45,19 +47,32 @@ public class RepositoryImpl implements Repository{
                         gifList.add(new Gif(json));
                     }
 
+                    observer.done();
                     nextGif();
                 }
             }
 
             @Override
             public void onFailure(@NotNull Call<GifList> call, @NotNull Throwable t) {
-                t.printStackTrace();
+                observer.done();
+                observer.error();
+                currentPage--;
             }
         });
     }
 
     public LiveData<Gif> getGif() {
         return liveData;
+    }
+
+    @Override
+    public void updateGif() {
+        if (currentGif < gifList.size() && currentGif != -1) {
+            liveData.setValue(gifList.get(currentGif));
+        } else {
+            currentPage++;
+            updateGifs();
+        }
     }
 
     @Override
@@ -81,5 +96,23 @@ public class RepositoryImpl implements Repository{
     @Override
     public boolean isFirst() {
         return currentGif == 0;
+    }
+
+    @Override
+    public void connect(Observer observer) {
+        this.observer = observer;
+    }
+
+    @Override
+    public void disconnect() {
+        this.observer = null;
+    }
+
+    public interface Observer {
+        void error();
+
+        void loading();
+
+        void done();
     }
 }
