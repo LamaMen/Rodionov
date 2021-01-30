@@ -1,15 +1,16 @@
 package com.example.tinkoff.view;
 
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.LiveData;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
@@ -77,14 +78,15 @@ public class GifViewerFragment extends Fragment {
         previousButton = view.findViewById(R.id.previous_button);
         nextButton = view.findViewById(R.id.next_button);
 
-//        Gif gif = App.getInstance().repository.getGif();
-
-        name.setText("Нашел в API крутую фичу");
-        Glide.with(getContext())
-                .load("http://static.devli.ru/public/images/gifs/202007/1687d750-5332-4cef-b4d9-0e1669523762.gif")
-                .centerCrop()
-                .apply(RequestOptions.bitmapTransform(new RoundedCornersTransformation(15, 0)))
-                .into(gifViewer);
+        LiveData<Gif> liveData = App.getInstance().repository.getLiveData();
+        liveData.observe(this, gif -> {
+            name.setText(gif.getName());
+            Glide.with(getContext())
+                    .load(gif.getUrl())
+                    .fitCenter()
+                    .apply(RequestOptions.bitmapTransform(new RoundedCornersTransformation(15, 0)))
+                    .into(gifViewer);
+        });
 
         return view;
     }
