@@ -84,7 +84,6 @@ public class GifViewerFragment extends Fragment {
             Glide.with(getContext())
                     .load(gif.getUrl())
                     .fitCenter()
-                    .apply(RequestOptions.bitmapTransform(new RoundedCornersTransformation(15, 0)))
                     .into(gifViewer);
         });
 
