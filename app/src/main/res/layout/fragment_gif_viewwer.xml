@@ -17,6 +17,7 @@
         android:contentDescription="@string/content_description" />
 
     <TextView
+        android:id="@+id/gif_name"
         android:layout_width="200dp"
         android:layout_height="wrap_content"
         app:layout_constraintStart_toStartOf="parent"
