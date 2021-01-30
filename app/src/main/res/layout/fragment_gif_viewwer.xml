@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    tools:context=".GifViewerFragment">
+    tools:context=".view.GifViewerFragment">
 
     <ImageView
         android:id="@+id/gif_viewer"
@@ -33,7 +33,7 @@
         app:layout_constraintTop_toBottomOf="@+id/gif_viewer"
         app:layout_constraintBottom_toBottomOf="parent"
         app:icon="@drawable/ic_previous_24"
-        style="@style/Widget.App.Button.OutlinedButton.IconOnly"/>
+        style="@style/Widget.App.Button.OutlinedButton.IconOnly" />
 
     <Button
         android:id="@+id/next_button"
