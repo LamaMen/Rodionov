@@ -4,6 +4,7 @@ import android.app.Application;
 
 import com.example.tinkoff.repository.GifService;
 import com.example.tinkoff.repository.Repository;
+import com.example.tinkoff.repository.RepositoryImpl;
 
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
@@ -14,8 +15,7 @@ public class App extends Application {
     private static App instance;
 
     public GifService service;
-    public Repository repository;
-    
+
     public static App getInstance() {
         return instance;
     }
@@ -24,7 +24,6 @@ public class App extends Application {
     public void onCreate() {
         super.onCreate();
         instance = this;
-        repository = new Repository();
         initRetrofit();
     }
 

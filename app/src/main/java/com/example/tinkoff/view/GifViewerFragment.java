@@ -1,33 +1,42 @@
 package com.example.tinkoff.view;
 
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.request.RequestOptions;
-import com.example.tinkoff.App;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.example.tinkoff.R;
+import com.example.tinkoff.repository.Repository;
+import com.example.tinkoff.repository.RepositoryImpl;
 import com.example.tinkoff.repository.model.Gif;
 
-import jp.wasabeef.glide.transformations.RoundedCornersTransformation;
 
-
-public class GifViewerFragment extends Fragment {
+public class GifViewerFragment extends Fragment implements Observer<Gif> {
     public final static String TAG = "VIEWER";
+
+    private final Repository repository;
 
     private ImageView gifViewer;
     private TextView name;
     private Button previousButton;
     private Button nextButton;
+    private ProgressBar progressBar;
 
 //    // TODO: Rename parameter arguments, choose names that match
 //    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -39,6 +48,7 @@ public class GifViewerFragment extends Fragment {
 //    private String mParam2;
 
     public GifViewerFragment() {
+        repository = RepositoryImpl.getInstance();
     }
 
     /**
@@ -62,6 +72,7 @@ public class GifViewerFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        repository.updateGifs();
 //        if (getArguments() != null) {
 //            mParam1 = getArguments().getString(ARG_PARAM1);
 //            mParam2 = getArguments().getString(ARG_PARAM2);
@@ -77,16 +88,45 @@ public class GifViewerFragment extends Fragment {
         name = view.findViewById(R.id.gif_name);
         previousButton = view.findViewById(R.id.previous_button);
         nextButton = view.findViewById(R.id.next_button);
+        progressBar = view.findViewById(R.id.progress_bar);
 
-        LiveData<Gif> liveData = App.getInstance().repository.getLiveData();
-        liveData.observe(this, gif -> {
-            name.setText(gif.getName());
-            Glide.with(getContext())
-                    .load(gif.getUrl())
-                    .fitCenter()
-                    .into(gifViewer);
-        });
+        LiveData<Gif> liveData = repository.getGif();
+        liveData.observe(this, this);
+
+        nextButton.setOnClickListener(v -> repository.nextGif());
+        previousButton.setOnClickListener(v -> repository.previousGif());
 
         return view;
+    }
+
+    @Override
+    public void onChanged(Gif gif) {
+        name.setText(gif.getName());
+        progressBar.setVisibility(View.VISIBLE);
+        Glide.with(getContext())
+                .load(gif.getUrl())
+                .listener(new RequestListener<Drawable>() {
+                    @Override
+                    public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                        progressBar.setVisibility(View.GONE);
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                        progressBar.setVisibility(View.GONE);
+                        return false;
+                    }
+                })
+                .fitCenter()
+                .into(gifViewer);
+
+        if (repository.isFirst()) {
+            previousButton.setClickable(false);
+            previousButton.setBackgroundColor(Color.parseColor("#e4e4e4"));
+        } else {
+            previousButton.setClickable(true);
+            previousButton.setBackgroundColor(Color.parseColor("#ffffff"));
+        }
     }
 }

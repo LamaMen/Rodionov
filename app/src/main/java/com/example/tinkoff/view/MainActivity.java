@@ -19,7 +19,5 @@ public class MainActivity extends AppCompatActivity {
                 .beginTransaction()
                 .replace(R.id.main_content, GifViewerFragment.newInstance("bla", "true"), GifViewerFragment.TAG)
                 .commit();
-
-        App.getInstance().repository.getGifs();
     }
 }
