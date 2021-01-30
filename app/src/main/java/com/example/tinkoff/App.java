@@ -3,8 +3,6 @@ package com.example.tinkoff;
 import android.app.Application;
 
 import com.example.tinkoff.repository.GifService;
-import com.example.tinkoff.repository.Repository;
-import com.example.tinkoff.repository.RepositoryImpl;
 
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;

@@ -1,12 +1,10 @@
 package com.example.tinkoff.view;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.os.Bundle;
 
-import com.example.tinkoff.App;
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.example.tinkoff.R;
-import com.example.tinkoff.view.GifViewerFragment;
 
 public class MainActivity extends AppCompatActivity {
 
