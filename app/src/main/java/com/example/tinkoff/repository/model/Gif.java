@@ -1,19 +1,20 @@
 package com.example.tinkoff.repository.model;
 
 public class Gif {
-    private final int id;
     private final String name;
     private final String url;
-
+    private final boolean isLast;
 
     public Gif(GifJson json) {
-        id = json.id;
         name = json.name;
         url = json.url;
+        isLast = false;
     }
 
-    public int getId() {
-        return id;
+    public Gif() {
+        name = "";
+        url = "";
+        isLast = true;
     }
 
     public String getName() {
@@ -22,5 +23,9 @@ public class Gif {
 
     public String getUrl() {
         return url;
+    }
+
+    public boolean isLast() {
+        return isLast;
     }
 }

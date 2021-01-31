@@ -6,9 +6,9 @@ import com.example.tinkoff.repository.model.Gif;
 
 public interface Repository {
 
-    void updateGifs();
+    void loadNewGifs();
 
-    LiveData<Gif> getGif();
+    LiveData<Gif> getLiveData();
 
     void updateGif();
 
@@ -18,7 +18,6 @@ public interface Repository {
 
     boolean isFirst();
 
-    void connect(RepositoryImpl.Observer observer);
+    void connect(RepositoryImpl.Observer observer, String chanel);
 
-    void disconnect();
 }

@@ -6,7 +6,6 @@ import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,7 +30,7 @@ import com.example.tinkoff.repository.model.Gif;
 
 
 public class GifViewerFragment extends Fragment implements androidx.lifecycle.Observer<Gif>, RepositoryImpl.Observer, View.OnClickListener {
-    public final static String TAG = "VIEWER";
+    public static final String CHANEL_KEY = "CHANEL";
 
     private final Repository repository;
 
@@ -45,46 +44,34 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
     private View errorText;
     private Button errorButton;
 
+    private View lastGifText;
 
-//    // TODO: Rename parameter arguments, choose names that match
-//    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-//    private static final String ARG_PARAM1 = "param1";
-//    private static final String ARG_PARAM2 = "param2";
-//
-//    // TODO: Rename and change types of parameters
-//    private String mParam1;
-//    private String mParam2;
 
     public GifViewerFragment() {
         repository = RepositoryImpl.getInstance();
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment GifViewwerFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static GifViewerFragment newInstance(String param1, String param2) {
+
+    // Метод для безопастного создания объекта фрагмента. В фрагмент задаётся канал,
+    // из которого он будет показывать изображения
+    public static GifViewerFragment newInstance(String chanel) {
         GifViewerFragment fragment = new GifViewerFragment();
-//        Bundle args = new Bundle();
-//        args.putString(ARG_PARAM1, param1);
-//        args.putString(ARG_PARAM2, param2);
-//        fragment.setArguments(args);
+        Bundle args = new Bundle();
+        args.putString(CHANEL_KEY, chanel);
+        fragment.setArguments(args);
         return fragment;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        repository.connect(this);
-//        if (getArguments() != null) {
-//            mParam1 = getArguments().getString(ARG_PARAM1);
-//            mParam2 = getArguments().getString(ARG_PARAM2);
-//        }
+        // Если у фрагмента есть сохранёные данные, считаваем
+        if (getArguments() == null) {
+            return;
+        }
+        String chanel = getArguments().getString(CHANEL_KEY);
+        // В репозитории меняем текущий канал, и устанавливаем нового слушателя
+        repository.connect(this, chanel);
     }
 
     @Override
@@ -92,6 +79,7 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_gif_viewwer, container, false);
 
+        // Запоминаем нужные нам view
         viewer = view.findViewById(R.id.gif_viewer);
         name = view.findViewById(R.id.gif_name);
         previousButton = view.findViewById(R.id.previous_button);
@@ -102,42 +90,65 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
         errorText = view.findViewById(R.id.error_text);
         errorButton = view.findViewById(R.id.error_button);
 
+        lastGifText = view.findViewById(R.id.last_gif);
+        // Устанавливаем слушателя нажатий для кнопки повторной загрузки
         errorButton.setOnClickListener(this);
 
-        LiveData<Gif> liveData = repository.getGif();
+        // Получаем LiveData из репозитория и устанавливаем слушателя изменений
+        LiveData<Gif> liveData = repository.getLiveData();
         liveData.observe(this, this);
 
+        // Устанавливаем слушателей для базовых кнопок вперёд и назад
         nextButton.setOnClickListener(v -> repository.nextGif());
         previousButton.setOnClickListener(v -> repository.previousGif());
 
-        repository.updateGifs();
+        // Запрашиваем первое изображение из репозитория
+        repository.updateGif();
 
         return view;
     }
 
     @Override
     public void onChanged(Gif gif) {
-        name.setText(gif.getName());
-        loading();
-        Glide.with(getContext())
-                .load(gif.getUrl())
-                .listener(new RequestListener<Drawable>() {
-                    @Override
-                    public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-                        done();
-                        error();
-                        return false;
-                    }
+        // Если пришедшее изображение последнее показываем соответствующий текст и скрываем viewer
+        if (gif.isLast()) {
+            deactivateButton(nextButton);
+            viewer.setVisibility(View.GONE);
+            name.setVisibility(View.GONE);
+            lastGifText.setVisibility(View.VISIBLE);
+        } else {
+            // Иначе устанавливаем имя изображения и с помощью Glide скачиваем изображание
+            // Glide самостоятельно кэширует изображения
+            lastGifText.setVisibility(View.GONE);
+            name.setText(gif.getName());
+            // Включаем отображение загрузки
+            loading();
+            Glide.with(getContext())
+                    .load(gif.getUrl())
+                    .listener(new RequestListener<Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                            // Если возникла ошибка загрузки, то скрываем отображение загрузки
+                            // и показываем плашку ошибки
+                            done();
+                            error();
+                            return false;
+                        }
 
-                    @Override
-                    public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-                        done();
-                        return false;
-                    }
-                })
-                .fitCenter()
-                .into(viewer);
+                        @Override
+                        public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                            // Если загрузка прошла корректно, то скрываем отображение загрузки
+                            // и убираем плашку ошибки
+                            done();
+                            closeErrorPage();
+                            return false;
+                        }
+                    })
+                    .fitCenter()
+                    .into(viewer);
+        }
 
+        // Выключаем кнопку назад, если это первое изображение
         if (repository.isFirst()) {
             deactivateButton(previousButton);
         } else {
@@ -147,8 +158,7 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
 
     @Override
     public void error() {
-        Log.e("Fragment", "Ошибка с загрзкой данных!");
-
+        // Скрываем базовые элементы управления и показываем сообщение об ошибке
         deactivateButton(previousButton);
         deactivateButton(nextButton);
         viewer.setVisibility(View.GONE);
@@ -157,6 +167,20 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
         errorIcon.setVisibility(View.VISIBLE);
         errorText.setVisibility(View.VISIBLE);
         errorButton.setVisibility(View.VISIBLE);
+    }
+
+    private void closeErrorPage() {
+        // Показываем базовые элементы управления и скрываем сообщение об ошибке
+        if (!repository.isFirst()) {
+            activateButton(previousButton);
+        }
+        activateButton(nextButton);
+        viewer.setVisibility(View.VISIBLE);
+        name.setVisibility(View.VISIBLE);
+
+        errorIcon.setVisibility(View.GONE);
+        errorText.setVisibility(View.GONE);
+        errorButton.setVisibility(View.GONE);
     }
 
     @Override
@@ -172,28 +196,16 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
     }
 
     @Override
-    public void onDetach() {
-        super.onDetach();
-        repository.disconnect();
-    }
-
-    @Override
     public void onClick(View view) {
+        // Проверяем наличие подключения к интернету
         ConnectivityManager cm = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo netInfo = cm.getActiveNetworkInfo();
         if (netInfo == null || !netInfo.isConnectedOrConnecting()) {
             return;
         }
 
-        activateButton(previousButton);
-        activateButton(nextButton);
-        viewer.setVisibility(View.VISIBLE);
-        name.setVisibility(View.VISIBLE);
-
-        errorIcon.setVisibility(View.GONE);
-        errorText.setVisibility(View.GONE);
-        errorButton.setVisibility(View.GONE);
-
+        // Если интернет есть то обновляем изображение
+        closeErrorPage();
         repository.updateGif();
     }
 

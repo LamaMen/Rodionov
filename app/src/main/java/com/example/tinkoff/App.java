@@ -8,6 +8,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class App extends Application {
+    // Базовый url для работы с API
     private static final String BASE_URL = "https://developerslife.ru/";
 
     private static App instance;
@@ -25,6 +26,7 @@ public class App extends Application {
         initRetrofit();
     }
 
+    // Инициализация Retrofit 2
     private void initRetrofit() {
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(BASE_URL)
