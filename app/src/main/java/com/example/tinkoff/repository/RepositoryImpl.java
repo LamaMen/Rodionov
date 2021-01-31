@@ -20,9 +20,11 @@ import retrofit2.Response;
 
 public class RepositoryImpl implements Repository {
     private static Repository instance;
+
     private final MutableLiveData<Gif> liveData = new MutableLiveData<>();
-    Map<String, FragmentData> dataMap = new HashMap<>();
     private Observer observer;
+
+    Map<String, FragmentData> dataMap = new HashMap<>();
     private String currentChanel;
 
     private RepositoryImpl() {
@@ -51,7 +53,7 @@ public class RepositoryImpl implements Repository {
                     }
 
                     observer.done();
-                    nextGif();
+                    updateGif();
                 }
             }
 
@@ -71,7 +73,7 @@ public class RepositoryImpl implements Repository {
     @Override
     public void updateGif() {
         FragmentData data = dataMap.get(currentChanel);
-        if (data.getNumberCurrentGif() < data.getSize() && data.getNumberCurrentGif() != -1) {
+        if (data.getNumberCurrentGif() < data.getSize()) {
             liveData.setValue(data.getGif());
         } else {
             data.incrementPage();
@@ -81,14 +83,8 @@ public class RepositoryImpl implements Repository {
 
     @Override
     public void nextGif() {
-        FragmentData data = dataMap.get(currentChanel);
-        if (data.getNumberCurrentGif() < data.getSize() - 1) {
-            data.incrementNumberGif();
-            liveData.setValue(data.getGif());
-        } else {
-            data.incrementPage();
-            updateGifs();
-        }
+        dataMap.get(currentChanel).incrementNumberGif();
+        updateGif();
     }
 
     @Override

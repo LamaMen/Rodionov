@@ -7,8 +7,8 @@ import java.util.List;
 
 public class FragmentData {
     private final List<Gif> gifList = new ArrayList<>();
-    private int numberCurrentGif = -1;
-    private int currentPage = 0;
+    private int numberCurrentGif = 0;
+    private int currentPage = -1;
 
     public void incrementPage() {
         currentPage++;

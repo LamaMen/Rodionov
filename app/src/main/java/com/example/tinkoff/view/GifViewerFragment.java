@@ -115,6 +115,7 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
                     @Override
                     public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
                         done();
+                        closeErrorPage();
                         return false;
                     }
                 })
@@ -130,8 +131,6 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
 
     @Override
     public void error() {
-        Log.e("Fragment", "Ошибка с загрзкой данных!");
-
         deactivateButton(previousButton);
         deactivateButton(nextButton);
         viewer.setVisibility(View.GONE);
@@ -140,6 +139,19 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
         errorIcon.setVisibility(View.VISIBLE);
         errorText.setVisibility(View.VISIBLE);
         errorButton.setVisibility(View.VISIBLE);
+    }
+
+    private void closeErrorPage() {
+        if (!repository.isFirst()) {
+            activateButton(previousButton);
+        }
+        activateButton(nextButton);
+        viewer.setVisibility(View.VISIBLE);
+        name.setVisibility(View.VISIBLE);
+
+        errorIcon.setVisibility(View.GONE);
+        errorText.setVisibility(View.GONE);
+        errorButton.setVisibility(View.GONE);
     }
 
     @Override
@@ -162,15 +174,7 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
             return;
         }
 
-        activateButton(previousButton);
-        activateButton(nextButton);
-        viewer.setVisibility(View.VISIBLE);
-        name.setVisibility(View.VISIBLE);
-
-        errorIcon.setVisibility(View.GONE);
-        errorText.setVisibility(View.GONE);
-        errorButton.setVisibility(View.GONE);
-
+        closeErrorPage();
         repository.updateGif();
     }
 
