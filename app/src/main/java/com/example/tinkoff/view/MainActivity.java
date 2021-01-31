@@ -9,7 +9,7 @@ import com.example.tinkoff.R;
 import com.google.android.material.tabs.TabLayout;
 
 public class MainActivity extends AppCompatActivity implements TabLayout.OnTabSelectedListener {
-    public final static String[] chancels = {"latest", "top"};
+    public final static String[] chancels = {"latest", "top", "hot"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

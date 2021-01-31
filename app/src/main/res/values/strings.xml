@@ -7,4 +7,6 @@
     <string name="error_button_text">ПОВТОРИТЬ</string>
     <string name="tab_last">Последние</string>
     <string name="tab_top">Лучшие</string>
+    <string name="last_gif">К сожалению больше gif изображений нет :(</string>
+    <string name="tab_hot">Горячие</string>
 </resources>

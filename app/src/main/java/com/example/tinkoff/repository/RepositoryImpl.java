@@ -22,13 +22,12 @@ public class RepositoryImpl implements Repository {
     private static Repository instance;
 
     private final MutableLiveData<Gif> liveData = new MutableLiveData<>();
-    private Observer observer;
-
     Map<String, FragmentData> dataMap = new HashMap<>();
+    private Observer observer;
     private String currentChanel;
 
     private RepositoryImpl() {
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < MainActivity.chancels.length; i++) {
             dataMap.put(MainActivity.chancels[i], new FragmentData());
         }
     }
@@ -40,7 +39,7 @@ public class RepositoryImpl implements Repository {
         return instance;
     }
 
-    public void updateGifs() {
+    public void loadNewGifs() {
         observer.loading();
 
         App.getInstance().service.getGifs(currentChanel, dataMap.get(currentChanel).getCurrentPage()).enqueue(new Callback<GifList>() {
@@ -48,8 +47,13 @@ public class RepositoryImpl implements Repository {
             public void onResponse(@NotNull Call<GifList> call, @NotNull Response<GifList> response) {
                 if (response.isSuccessful()) {
                     GifList returnedPage = response.body();
-                    for (GifJson json : returnedPage.results) {
-                        dataMap.get(currentChanel).addGif(new Gif(json));
+
+                    if (returnedPage.results.size() == 0) {
+                        dataMap.get(currentChanel).addGif(new Gif());
+                    } else {
+                        for (GifJson json : returnedPage.results) {
+                            dataMap.get(currentChanel).addGif(new Gif(json));
+                        }
                     }
 
                     observer.done();
@@ -66,7 +70,7 @@ public class RepositoryImpl implements Repository {
         });
     }
 
-    public LiveData<Gif> getGif() {
+    public LiveData<Gif> getLiveData() {
         return liveData;
     }
 
@@ -77,7 +81,7 @@ public class RepositoryImpl implements Repository {
             liveData.setValue(data.getGif());
         } else {
             data.incrementPage();
-            updateGifs();
+            loadNewGifs();
         }
     }
 

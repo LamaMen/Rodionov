@@ -6,7 +6,6 @@ import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -45,6 +44,8 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
     private View errorIcon;
     private View errorText;
     private Button errorButton;
+
+    private View lastGifText;
 
 
     public GifViewerFragment() {
@@ -85,9 +86,11 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
         errorText = view.findViewById(R.id.error_text);
         errorButton = view.findViewById(R.id.error_button);
 
+        lastGifText = view.findViewById(R.id.last_gif);
+
         errorButton.setOnClickListener(this);
 
-        LiveData<Gif> liveData = repository.getGif();
+        LiveData<Gif> liveData = repository.getLiveData();
         liveData.observe(this, this);
 
         nextButton.setOnClickListener(v -> repository.nextGif());
@@ -100,27 +103,36 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
 
     @Override
     public void onChanged(Gif gif) {
-        name.setText(gif.getName());
-        loading();
-        Glide.with(getContext())
-                .load(gif.getUrl())
-                .listener(new RequestListener<Drawable>() {
-                    @Override
-                    public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-                        done();
-                        error();
-                        return false;
-                    }
+        if (gif.isLast()) {
+            deactivateButton(nextButton);
+            viewer.setVisibility(View.GONE);
+            name.setVisibility(View.GONE);
+            lastGifText.setVisibility(View.VISIBLE);
+        } else {
+            lastGifText.setVisibility(View.GONE);
+            name.setText(gif.getName());
+            loading();
+            Glide.with(getContext())
+                    .load(gif.getUrl())
+                    .listener(new RequestListener<Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                            done();
+                            error();
+                            return false;
+                        }
 
-                    @Override
-                    public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-                        done();
-                        closeErrorPage();
-                        return false;
-                    }
-                })
-                .fitCenter()
-                .into(viewer);
+                        @Override
+                        public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                            done();
+                            closeErrorPage();
+                            return false;
+                        }
+                    })
+                    .fitCenter()
+                    .into(viewer);
+        }
+
 
         if (repository.isFirst()) {
             deactivateButton(previousButton);
