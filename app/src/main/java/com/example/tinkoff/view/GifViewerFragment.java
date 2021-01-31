@@ -30,7 +30,6 @@ import com.example.tinkoff.repository.model.Gif;
 
 
 public class GifViewerFragment extends Fragment implements androidx.lifecycle.Observer<Gif>, RepositoryImpl.Observer, View.OnClickListener {
-    public final static String TAG = "VIEWER";
     public static final String CHANEL_KEY = "CHANEL";
 
     private final Repository repository;
@@ -53,6 +52,8 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
     }
 
 
+    // Метод для безопастного создания объекта фрагмента. В фрагмент задаётся канал,
+    // из которого он будет показывать изображения
     public static GifViewerFragment newInstance(String chanel) {
         GifViewerFragment fragment = new GifViewerFragment();
         Bundle args = new Bundle();
@@ -64,10 +65,12 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Если у фрагмента есть сохранёные данные, считаваем
         if (getArguments() == null) {
             return;
         }
         String chanel = getArguments().getString(CHANEL_KEY);
+        // В репозитории меняем текущий канал, и устанавливаем нового слушателя
         repository.connect(this, chanel);
     }
 
@@ -76,6 +79,7 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_gif_viewwer, container, false);
 
+        // Запоминаем нужные нам view
         viewer = view.findViewById(R.id.gif_viewer);
         name = view.findViewById(R.id.gif_name);
         previousButton = view.findViewById(R.id.previous_button);
@@ -87,15 +91,18 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
         errorButton = view.findViewById(R.id.error_button);
 
         lastGifText = view.findViewById(R.id.last_gif);
-
+        // Устанавливаем слушателя нажатий для кнопки повторной загрузки
         errorButton.setOnClickListener(this);
 
+        // Получаем LiveData из репозитория и устанавливаем слушателя изменений
         LiveData<Gif> liveData = repository.getLiveData();
         liveData.observe(this, this);
 
+        // Устанавливаем слушателей для базовых кнопок вперёд и назад
         nextButton.setOnClickListener(v -> repository.nextGif());
         previousButton.setOnClickListener(v -> repository.previousGif());
 
+        // Запрашиваем первое изображение из репозитория
         repository.updateGif();
 
         return view;
@@ -103,20 +110,26 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
 
     @Override
     public void onChanged(Gif gif) {
+        // Если пришедшее изображение последнее показываем соответствующий текст и скрываем viewer
         if (gif.isLast()) {
             deactivateButton(nextButton);
             viewer.setVisibility(View.GONE);
             name.setVisibility(View.GONE);
             lastGifText.setVisibility(View.VISIBLE);
         } else {
+            // Иначе устанавливаем имя изображения и с помощью Glide скачиваем изображание
+            // Glide самостоятельно кэширует изображения
             lastGifText.setVisibility(View.GONE);
             name.setText(gif.getName());
+            // Включаем отображение загрузки
             loading();
             Glide.with(getContext())
                     .load(gif.getUrl())
                     .listener(new RequestListener<Drawable>() {
                         @Override
                         public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                            // Если возникла ошибка загрузки, то скрываем отображение загрузки
+                            // и показываем плашку ошибки
                             done();
                             error();
                             return false;
@@ -124,6 +137,8 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
 
                         @Override
                         public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                            // Если загрузка прошла корректно, то скрываем отображение загрузки
+                            // и убираем плашку ошибки
                             done();
                             closeErrorPage();
                             return false;
@@ -133,7 +148,7 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
                     .into(viewer);
         }
 
-
+        // Выключаем кнопку назад, если это первое изображение
         if (repository.isFirst()) {
             deactivateButton(previousButton);
         } else {
@@ -143,6 +158,7 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
 
     @Override
     public void error() {
+        // Скрываем базовые элементы управления и показываем сообщение об ошибке
         deactivateButton(previousButton);
         deactivateButton(nextButton);
         viewer.setVisibility(View.GONE);
@@ -154,6 +170,7 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
     }
 
     private void closeErrorPage() {
+        // Показываем базовые элементы управления и скрываем сообщение об ошибке
         if (!repository.isFirst()) {
             activateButton(previousButton);
         }
@@ -180,12 +197,14 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
 
     @Override
     public void onClick(View view) {
+        // Проверяем наличие подключения к интернету
         ConnectivityManager cm = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo netInfo = cm.getActiveNetworkInfo();
         if (netInfo == null || !netInfo.isConnectedOrConnecting()) {
             return;
         }
 
+        // Если интернет есть то обновляем изображение
         closeErrorPage();
         repository.updateGif();
     }

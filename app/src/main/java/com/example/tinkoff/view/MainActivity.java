@@ -9,6 +9,7 @@ import com.example.tinkoff.R;
 import com.google.android.material.tabs.TabLayout;
 
 public class MainActivity extends AppCompatActivity implements TabLayout.OnTabSelectedListener {
+    // Список каналов, из которых будут запрашиваться Gif изображения
     public final static String[] chancels = {"latest", "top", "hot"};
 
     @Override
@@ -16,15 +17,18 @@ public class MainActivity extends AppCompatActivity implements TabLayout.OnTabSe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Инициализация tab layout и добавление обработки собыий у него
         TabLayout tabLayout = findViewById(R.id.tab_layout);
         tabLayout.addOnTabSelectedListener(this);
 
+        // Устанавливаем начальный фрагмент при старте приложения
         getSupportFragmentManager()
                 .beginTransaction()
-                .replace(R.id.main_content, GifViewerFragment.newInstance(chancels[0]), chancels[0].toUpperCase())
+                .replace(R.id.main_content, GifViewerFragment.newInstance(chancels[0]))
                 .commit();
     }
 
+    // При смене таба, меняем фрагмент
     @Override
     public void onTabSelected(TabLayout.Tab tab) {
         Fragment fragment = GifViewerFragment.newInstance(chancels[tab.getPosition()]);

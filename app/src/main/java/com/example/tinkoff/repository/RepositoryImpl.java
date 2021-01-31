@@ -27,6 +27,7 @@ public class RepositoryImpl implements Repository {
     private String currentChanel;
 
     private RepositoryImpl() {
+        // Задаем шаблоны для каналов
         for (int i = 0; i < MainActivity.chancels.length; i++) {
             dataMap.put(MainActivity.chancels[i], new FragmentData());
         }
@@ -40,29 +41,38 @@ public class RepositoryImpl implements Repository {
     }
 
     public void loadNewGifs() {
+        // Увидомляем о загрузке данных
         observer.loading();
 
-        App.getInstance().service.getGifs(currentChanel, dataMap.get(currentChanel).getCurrentPage()).enqueue(new Callback<GifList>() {
+        // С помощью Retrofit 2 получаем Json с адресами изображений от API
+        App.getInstance().service.getGifs(currentChanel, dataMap.get(currentChanel)
+                .getCurrentPage()).enqueue(new Callback<GifList>() {
             @Override
             public void onResponse(@NotNull Call<GifList> call, @NotNull Response<GifList> response) {
                 if (response.isSuccessful()) {
                     GifList returnedPage = response.body();
 
+                    // Если ничего не получили, добавляем последнюю гифку
                     if (returnedPage.results.size() == 0) {
                         dataMap.get(currentChanel).addGif(new Gif());
                     } else {
+                        // Если ответ не пустой сохраняем в текущий канал пришедшие адреса изображений
                         for (GifJson json : returnedPage.results) {
                             dataMap.get(currentChanel).addGif(new Gif(json));
                         }
                     }
 
+                    // Увидомляем фрагмент о том, что загрузка прошла успешно
                     observer.done();
+                    // Возращаем изображения
                     updateGif();
                 }
             }
 
             @Override
             public void onFailure(@NotNull Call<GifList> call, @NotNull Throwable t) {
+                // При возникновении ошибки увидомляем об этом фрагмент и
+                // возращаемся на прошлую коректную страницу загрузки
                 observer.done();
                 observer.error();
                 dataMap.get(currentChanel).roilBackPage();
@@ -76,6 +86,8 @@ public class RepositoryImpl implements Repository {
 
     @Override
     public void updateGif() {
+        // Если мы не выходим за пределы загруженных изображений возращаем текщее,
+        // иначе загражаем новую страницу
         FragmentData data = dataMap.get(currentChanel);
         if (data.getNumberCurrentGif() < data.getSize()) {
             liveData.setValue(data.getGif());
@@ -108,7 +120,7 @@ public class RepositoryImpl implements Repository {
         currentChanel = chanel;
     }
 
-
+    // Интерфейс для того, чтобы репозиторий мог увидомлять фрагмент о возникновении событий
     public interface Observer {
         void error();
 
