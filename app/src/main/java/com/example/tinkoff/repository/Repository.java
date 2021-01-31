@@ -18,7 +18,6 @@ public interface Repository {
 
     boolean isFirst();
 
-    void connect(RepositoryImpl.Observer observer);
+    void connect(RepositoryImpl.Observer observer, String chanel);
 
-    void disconnect();
 }

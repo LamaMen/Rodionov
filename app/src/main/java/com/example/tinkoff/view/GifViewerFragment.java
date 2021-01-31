@@ -32,6 +32,7 @@ import com.example.tinkoff.repository.model.Gif;
 
 public class GifViewerFragment extends Fragment implements androidx.lifecycle.Observer<Gif>, RepositoryImpl.Observer, View.OnClickListener {
     public final static String TAG = "VIEWER";
+    public static final String CHANEL_KEY = "CHANEL";
 
     private final Repository repository;
 
@@ -46,45 +47,27 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
     private Button errorButton;
 
 
-//    // TODO: Rename parameter arguments, choose names that match
-//    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-//    private static final String ARG_PARAM1 = "param1";
-//    private static final String ARG_PARAM2 = "param2";
-//
-//    // TODO: Rename and change types of parameters
-//    private String mParam1;
-//    private String mParam2;
-
     public GifViewerFragment() {
         repository = RepositoryImpl.getInstance();
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment GifViewwerFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static GifViewerFragment newInstance(String param1, String param2) {
+
+    public static GifViewerFragment newInstance(String chanel) {
         GifViewerFragment fragment = new GifViewerFragment();
-//        Bundle args = new Bundle();
-//        args.putString(ARG_PARAM1, param1);
-//        args.putString(ARG_PARAM2, param2);
-//        fragment.setArguments(args);
+        Bundle args = new Bundle();
+        args.putString(CHANEL_KEY, chanel);
+        fragment.setArguments(args);
         return fragment;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        repository.connect(this);
-//        if (getArguments() != null) {
-//            mParam1 = getArguments().getString(ARG_PARAM1);
-//            mParam2 = getArguments().getString(ARG_PARAM2);
-//        }
+        if (getArguments() == null) {
+            return;
+        }
+        String chanel = getArguments().getString(CHANEL_KEY);
+        repository.connect(this, chanel);
     }
 
     @Override
@@ -110,7 +93,7 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
         nextButton.setOnClickListener(v -> repository.nextGif());
         previousButton.setOnClickListener(v -> repository.previousGif());
 
-        repository.updateGifs();
+        repository.updateGif();
 
         return view;
     }
@@ -169,12 +152,6 @@ public class GifViewerFragment extends Fragment implements androidx.lifecycle.Ob
     public void done() {
         progressBar.setVisibility(View.GONE);
         viewer.setVisibility(View.VISIBLE);
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        repository.disconnect();
     }
 
     @Override
